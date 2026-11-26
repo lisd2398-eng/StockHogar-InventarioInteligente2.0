@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockHogar - Inventario Inteligente</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body class="modo-claro">
+
+  <!-- ============ PANTALLA AUTH (LOGIN / REGISTRO) ============ -->
+  <section id="pantalla-auth" class="pantalla activa auth">
+    <div class="logo-container">
+      <div class="logo-icon"><i class="fas fa-house-chimney"></i></div>
+      <h1>STOCKHOGAR</h1>
+      <p class="subtitulo">Inventario Inteligente</p>
+    </div>
+
+    <div id="form-login" class="form-card">
+      <h2>Iniciar Sesión</h2>
+      <input id="login-correo" type="email" placeholder="Correo electrónico">
+      <input id="login-pass" type="password" placeholder="Contraseña">
+      <button class="btn-primario" onclick="iniciarSesion()">Iniciar Sesión</button>
+      <a href="#" class="link-ayuda" onclick="event.preventDefault(); alert('Función simulada: se enviaría un correo de recuperación.')">¿Olvidaste tu contraseña?</a>
+      <a href="#" class="link-ayuda" onclick="event.preventDefault(); toggleAuth()">¿No tienes cuenta? Regístrate</a>
+      <button class="btn-invitado" onclick="entrarComoInvitado()">Entrar como Invitado</button>
+    </div>
+
+    <div id="form-registro" class="form-card" style="display:none;">
+      <h2>Crear Cuenta</h2>
+      <input id="reg-nombre" type="text" placeholder="Nombre completo">
+      <input id="reg-correo" type="email" placeholder="Correo electrónico">
+      <input id="reg-pass" type="password" placeholder="Contraseña">
+      <input id="reg-pass2" type="password" placeholder="Repetir contraseña">
+      <button class="btn-primario" onclick="registrarUsuario()">Registrarse</button>
+      <a href="#" class="link-ayuda" onclick="event.preventDefault(); toggleAuth()">¿Ya tienes cuenta? Inicia sesión</a>
+    </div>
+  </section>
+
+  <!-- ============ PANTALLA HOME ============ -->
+  <section id="pantalla-home" class="pantalla">
+    <header class="header-home">
+      <div>
+        <h2 id="saludo-usuario">¡Hola, Usuario!</h2>
+        <p class="subtitulo-home">¿Qué te gustaría hacer hoy?</p>
+      </div>
+      <button class="btn-campana" onclick="irA('pantalla-notificaciones')">
+        <i class="fas fa-bell"></i>
+        <span id="badge-alertas" class="badge">0</span>
+      </button>
+    </header>
+
+    <button class="btn-escanear" onclick="abrirEscaner()">
+      <i class="fas fa-barcode"></i>
+      <span>ESCANEAR CÓDIGO DE BARRAS</span>
+      <small>Escaneá el código para agregar un producto</small>
+    </button>
+
+    <h3 class="seccion-titulo">Resumen de tu inventario</h3>
+    <div class="resumen-grid">
+      <div class="tarjeta-resumen">
+        <div class="icono verde"><i class="fas fa-box"></i></div>
+        <span class="numero" id="total-productos">0</span>
+        <span class="etiqueta">Productos</span>
+      </div>
+      <div class="tarjeta-resumen">
+        <div class="icono naranja"><i class="fas fa-clock"></i></div>
+        <span class="numero" id="total-por-vencer">0</span>
+        <span class="etiqueta">Por vencer</span>
+      </div>
+      <div class="tarjeta-resumen">
+        <div class="icono azul"><i class="fas fa-list"></i></div>
+        <span class="numero" id="total-categorias">0</span>
+        <span class="etiqueta">Categorías</span>
+      </div>
+    </div>
+
+    <h3 class="seccion-titulo">Acciones rápidas</h3>
+    <div class="acciones-rapidas">
+      <button onclick="abrirEscaner()"><i class="fas fa-plus"></i> Agregar</button>
+      <button onclick="irA('pantalla-inventario')"><i class="fas fa-warehouse"></i> Inventario</button>
+      <button onclick="irA('pantalla-notificaciones')"><i class="fas fa-calendar-alt"></i> Alertas</button>
+    </div>
+  </section>
+
+  <!-- ============ PANTALLA AGREGAR / EDITAR ============ -->
+  <section id="pantalla-agregar" class="pantalla">
+    <h2 id="titulo-agregar">Agregar Producto</h2>
+    <div id="lector-agregar" class="lector"></div>
+    <button class="btn-secundario" onclick="encenderCamara('prod-codigo','lector-agregar')">
+      <i class="fas fa-camera"></i> Escanear con cámara
+    </button>
+    <input id="prod-codigo" type="text" placeholder="Código de barras (o manual)">
+    <input id="prod-nombre" type="text" placeholder="Nombre del producto">
+    <select id="prod-categoria">
+      <option value="">Seleccionar categoría</option>
+      <option>Lácteos y Huevos</option>
+      <option>Carnes y Fiambres</option>
+      <option>Frutas y Verduras</option>
+      <option>Almacén (Secos)</option>
+      <option>Conservas</option>
+      <option>Bebidas</option>
+      <option>Congelados</option>
+    </select>
+    <label class="label-fecha">Fecha de vencimiento:</label>
+    <input id="prod-fecha" type="date">
+    <input id="prod-cantidad" type="number" value="1" min="1" placeholder="Cantidad">
+    <button id="btn-guardar-producto" class="btn-primario" onclick="agregarProducto()">Guardar Producto</button>
+    <button class="btn-cancelar" onclick="cancelarAgregar()">Cancelar</button>
+  </section>
+
+  <!-- ============ PANTALLA INVENTARIO ============ -->
+  <section id="pantalla-inventario" class="pantalla">
+    <h2>Inventario</h2>
+    <input type="text" placeholder="🔍 Buscar producto..." oninput="buscarProducto(this.value)" class="buscador">
+    <div class="filtros">
+      <button class="btn-filtro activo" data-filtro="todos" onclick="cambiarFiltro('todos')">Todos</button>
+      <button class="btn-filtro" data-filtro="porvencer" onclick="cambiarFiltro('porvencer')">Por vencer</button>
+      <button class="btn-filtro" data-filtro="vencidos" onclick="cambiarFiltro('vencidos')">Vencidos</button>
+    </div>
+    <ul id="lista-productos" class="lista-productos"></ul>
+  </section>
+
+  <!-- ============ PANTALLA CATEGORÍAS ============ -->
+  <section id="pantalla-categorias" class="pantalla">
+    <h2>Categorías</h2>
+    <ul id="lista-categorias" class="lista-categorias"></ul>
+  </section>
+
+  <!-- ============ PANTALLA DETALLE CATEGORÍA ============ -->
+  <section id="pantalla-detalle-categoria" class="pantalla">
+    <button class="btn-volver" onclick="volverACategorias()">← Volver a Categorías</button>
+    <h2 id="titulo-detalle-categoria">Categoría</h2>
+    <ul id="lista-detalle-categoria" class="lista-productos"></ul>
+  </section>
+
+  <!-- ============ PANTALLA NOTIFICACIONES ============ -->
+  <section id="pantalla-notificaciones" class="pantalla">
+    <h2><i class="fas fa-bell"></i> Notificaciones</h2>
+    <ul id="lista-notificaciones" class="lista-notificaciones"></ul>
+    <button class="btn-secundario" onclick="irA('pantalla-home')">← Volver al inicio</button>
+  </section>
+
+  <!-- ============ PANTALLA AJUSTES ============ -->
+  <section id="pantalla-ajustes" class="pantalla">
+    <h2>Ajustes</h2>
+    <div class="tarjeta-ajuste">
+      <span><i class="fas fa-user"></i> Usuario</span>
+      <strong id="nombre-ajustes">-</strong>
+    </div>
+    <div class="tarjeta-ajuste">
+      <span><i class="fas fa-moon"></i> Modo Oscuro</span>
+      <label class="switch">
+        <input id="toggle-modo-oscuro" type="checkbox" onchange="cambiarModoOscuro()">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="tarjeta-ajuste">
+      <span><i class="fas fa-bell"></i> Notificaciones</span>
+      <label class="switch">
+        <input id="toggle-notificaciones" type="checkbox" onchange="guardarPreferenciaNotificaciones()">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <p id="aviso-notificaciones" class="aviso" style="display:none;">
+      ⚠️ El navegador bloqueó las notificaciones. Habilitalas en la configuración del sitio.
+    </p>
+    <button class="btn-primario" onclick="cerrarSesion()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</button>
+    <button class="btn-peligro" onclick="borrarTodo()"><i class="fas fa-trash"></i> Borrar Inventario</button>
+    <p class="version">Versión 1.0.0 · StockHogar 2026</p>
+  </section>
+
+  <!-- ============ BARRA DE NAVEGACIÓN INFERIOR ============ -->
+  <nav id="barra-nav" class="barra-nav" style="display:none;">
+    <button onclick="irA('pantalla-home')"><i class="fas fa-home"></i><span>Inicio</span></button>
+    <button onclick="irA('pantalla-inventario')"><i class="fas fa-box"></i><span>Inventario</span></button>
+    <button onclick="irA('pantalla-categorias')"><i class="fas fa-th-large"></i><span>Categorías</span></button>
+    <button onclick="irA('pantalla-ajustes')"><i class="fas fa-cog"></i><span>Ajustes</span></button>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
