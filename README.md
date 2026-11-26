@@ -1,0 +1,1 @@
+# StockHogar-InventarioInteligente2.0
